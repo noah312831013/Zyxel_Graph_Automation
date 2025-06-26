@@ -1,0 +1,75 @@
+html, body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+main {
+  opacity: 0;
+  transform: translateY(-30px); /* 初始往上偏移30px */
+  transition: opacity 0.6s ease, transform 1s ease;
+}
+
+main.fade-in {
+  opacity: 1;
+  transform: translateY(0); /* 回到原位 */
+}
+
+body {
+  padding-top: 4.5rem;
+}
+
+.alert-pre {
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.external-link {
+  padding-top: 6px;
+}
+
+.avatar-link {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.indicator-triangle {
+  position: relative;
+  display: inline-block; /* 或保持原本display */
+  padding-bottom: 10px; /* 預留空間給三角形 */
+}
+
+label {
+  font-weight: bold;
+  /* background-color: #f8f8f8;
+  border-radius: 0.3rem;  
+  padding: 0.25em 0.75em;   
+  display: inline-block;    
+  border: 1px solid #cfcfcf; */
+}
+
+.glass-navbar {
+  background: rgba(255, 255, 255, 0.594); /* 半透明黑色背景 */
+  backdrop-filter: blur(20px); /* 毛玻璃效果 */
+  border-bottom: 1.5px solid rgba(171, 171, 171, 0.2); /* 添加邊框 */
+  border: 0.5px solid rgba(255, 255, 255, 0.77); /* 添加線框 */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* 陰影效果 */
+}
+
+.nav-link {
+  color: rgb(84, 84, 84) !important; /* 將文字顏色設置為白色 */
+  font-size: 15px;
+  padding: 0.25em 1em;       /* 內距讓背景顯示更明顯 */
+}
+
+.nav-link.active {
+  color: #242424 !important; /* 可選：為 active 狀態設置不同顏色 */
+  border-radius: 1.5rem;     /* 圓角長方形 */
+  padding: 0.25em 1em;       /* 內距讓背景顯示更明顯 */
+  background: rgba(80, 80, 80, 0.064);
+  /* border: 0.5px solid #6d6d6d3b; 添加線框 */
+}
+.navbar-brand {
+  color: rgb(0, 0, 0) !important; /* 將文字顏色設置為白色 */
+  font-size: 20px;
+  font-weight: bold;
+}

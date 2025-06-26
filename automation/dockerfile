@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+# 設置工作目錄
+WORKDIR /app
+
+# 複製專案文件到容器中
+COPY . /app
+
+# 安裝依賴
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 設置環境變數
+ENV PYTHONUNBUFFERED=1
+

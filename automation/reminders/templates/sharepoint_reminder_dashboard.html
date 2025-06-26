@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>SharePoint Reminder</h1>
+<p>SharePoint Reminder is an automated system designed to track project progress by monitoring files on SharePoint. It identifies tasks or updates that require attention and sends reminders to relevant stakeholders via Microsoft Teams. Stakeholders can respond directly within Teams by referencing the message sent by the server. The system continuously polls these messages, extracts the responses, and updates the corresponding fields back in SharePoint—ensuring seamless and real-time collaboration and progress tracking.</p>
+<hr>
+<form id="config-form" class="mb-4">
+  <div class="form-group">
+    <label for="routine-interval">Notify Interval (seconds):</label>
+    <input type="number" id="routine-interval" name="routine_interval" class="form-control" value="{{ config.routine_interval|default:86400 }}" required>
+  </div>
+  <button type="button" id="start-tasks" class="btn btn-primary">Start</button>
+</form>
+
+<h2>Tracking Items</h2>
+<table class="table table-bordered table-striped" id="tracking-table">
+  <thead class="thead-dark">
+    <tr>
+      <th>Sheet Name</th>
+      <th>Row</th>
+      <th>Task</th>
+      <th>Owner</th>
+      <th>Reason</th>
+      <th>Replied</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Dynamic content will be loaded here -->
+  </tbody>
+</table>
+
+{% endblock %}
+{% block scripts %}
+
+<script>
+  function refreshTrackingItems() {
+    $.get("{% url 'get_tracking_items' %}", function(data) {
+      const tableBody = $("#tracking-table tbody");
+      tableBody.empty();
+      data.forEach(item => {
+        tableBody.append(`
+          <tr>
+            <td>${item.sheet_name}</td>
+            <td>${item.row}</td>
+            <td>${item.task}</td>
+            <td>${item.owner_name}</td>
+            <td>${item.reason}</td>
+            <td>
+              ${item.status === "PENDING" ? "⏳ Pending"
+              : item.status === "SENT" ? "📤 Sent"
+              : item.status === "FAILED" ? "❌ Failed"
+              : item.status === "COMPLETED" ? "✅ Completed"
+              : item.status}
+            </td>
+          </tr>
+        `);
+      });
+    });
+  }
+
+  $(() => {
+    $("#start-tasks").click(() => {
+      const r = +$("#routine-interval").val();
+      $.post("{% url 'add_schedule_task' %}", {
+        routine_interval: r,
+        csrfmiddlewaretoken: "{{ csrf_token }}"
+      }, res => alert(res.message));
+    });
+    // Refresh tracking items every 5 seconds
+    setInterval(refreshTrackingItems, 5000);
+  });
+</script>
+{% endblock %}

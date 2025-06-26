@@ -1,0 +1,10 @@
+# 排除虛擬環境
+venv/
+# 排除 Git 文件
+.git
+# 排除本地的 __pycache__
+__pycache__/
+# 排除臨時文件
+*.pyc
+*.pyo
+*.log

@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>未回應主題查詢</h1>
+<h1>Unanswered Topic Tracker</h1>
 <p>
-  定期從聊天室（Teams）中截取對話，使用大型語言模型（LLM）分析對話內容，找出：
+  Periodically capture conversations from chat rooms (Teams) and use a large language model (LLM) to analyze the content to identify:
   <ul>
-    <li>哪些問題被提出但沒有獲得有效回應。</li>
-    <li>哪些主題被中斷或遺忘。</li>
-    <li>將這些未回應內容記錄起來，以便後續追蹤或提醒人員回應。</li>
+    <li>Which questions were raised but did not receive valid responses.</li>
+    <li>Which topics were interrupted or forgotten.</li>
+    <li>Record these unanswered items for follow-up or to remind people to respond.</li>
   </ul>
 </p>
 <hr>
@@ -16,8 +16,147 @@
     {{ form.chat_id.label_tag }}
     {{ form.chat_id }}
   </div>
-  <div class="mt-3">
-    <button type="submit" class="btn btn-primary">開始分析</button>
+
+  <div class="form-group mt-3">
+    {{ form.drive_name.label_tag }}
+    {{ form.drive_name }}
   </div>
+
+  <div class="form-group mt-3">
+    {{ form.file_path.label_tag }}
+    {{ form.file_path }}
+    <small class="form-text text-muted">
+      Will be saved as: <code id="preview-path"></code>
+    </small>
+  </div>
+
+  <div class="form-group mt-3">
+    {{ form.frequency_minutes.label_tag }}
+    {{ form.frequency_minutes }}
+  </div>
+
+  <div class="mt-3">
+    <button type="submit" class="btn btn-primary">Track Chat Room</button>
+  </div>
+</div>
 </form>
+{% if messages %}
+  <hr>
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+<div>
+<hr>
+<h3>Current Scheduled Tasks</h3>
+<div id="task-list">
+  <em>Loading...</em>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const chatSelect = document.querySelector("#id_chat_id");
+    const filePathInput = document.querySelector("#id_file_path");
+    const preview = document.querySelector("#preview-path");
+
+    function updateFilePath() {
+      const selectedTopic = chatSelect.options[chatSelect.selectedIndex]?.text.trim();
+      if (selectedTopic) {
+        const safeTopic = selectedTopic.replace(/[\/\\?%*:|"<> ]/g, "_");
+        const path = `/unanswered_topic/${safeTopic}.xlsx`;
+        filePathInput.value = path;
+        preview.textContent = path;
+      } else {
+        filePathInput.value = "";
+        preview.textContent = "";
+      }
+    }
+
+    // 初始化更新一次
+    updateFilePath();
+
+    // 綁定選單變更事件（注意：是 'change' 而不是 'input'）
+    chatSelect.addEventListener("change", updateFilePath);
+  });
+  // 動態載入 CeleryBeatTask_UTT 任務
+  function loadTasks() {
+    fetch("{% url 'list_tasks' %}")
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("task-list");
+        if (!data.tasks.length) {
+          list.innerHTML = "<em>No task</em>";
+          return;
+        }
+        list.innerHTML = `
+          <table class="table table-bordered table-striped" id="tracking-table">
+            <thead class="thead-dark">
+              <tr>
+                <th>ID</th>
+                <th>Chat Room</th>
+                <th>Save Path</th>
+                <th>Frequency (minutes)</th>
+                <th>Last Updated</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.tasks.map(t => `
+                <tr>
+                  <td>${t.id}</td>
+                  <td>${t.chat_name}</td>
+                  <td>${t.display_path}</td>
+                  <td>${t.frequency_minutes}</td>
+                  <td>${t.updated_at || ""}</td>
+                  <td>${t.created_at || ""}</td>
+                  <td>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTask(${t.id})">Delete</button>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      });
+  }
+  document.addEventListener("DOMContentLoaded", function () {
+    // ...existing code...
+    loadTasks();
+    setInterval(loadTasks, 10000); // 每10秒自動刷新
+  });
+
+  function deleteTask(taskId) {
+    if (confirm("Are you sure you want to delete task #" + taskId + "?")) {
+      fetch(`/Unanswered_Topic_Tracker/api/delete_task${taskId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCSRFToken()
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(`✅ Task ${data.task_id} has been deleted`);
+        loadTasks();
+      })
+      .catch(err => {
+        alert("❌ Deletion failed");
+        console.error(err);
+      });
+    }
+  }
+
+  // 取得 CSRF token 的輔助函式
+  function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+
+</script>
+
 {% endblock %}

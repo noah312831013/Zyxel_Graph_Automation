@@ -2,12 +2,14 @@ import requests
 import base64
 import json
 from django.utils.dateparse import parse_datetime
-
+from io import BytesIO
+import pandas as pd
 from typing import TYPE_CHECKING, List, Dict, Any
 if TYPE_CHECKING:
     from meetings.models import AutoScheduleMeeting
 GRAPH_URL = 'https://graph.microsoft.com/v1.0'
 from core.models import UserToken
+from urllib.parse import quote
 
 class GraphClient:
     def __init__(self, user_id):
@@ -17,8 +19,9 @@ class GraphClient:
         self.base_url = GRAPH_URL
         self.user_id = user_id
         self.me = self.get_user_info()
+        self.domain = "unizyx.sharepoint.com"
 
-    def _send_request(self, endpoint, method='GET', params=None, data=None):
+    def _send_request(self, endpoint, method='GET', params=None, data=None, json=None):
         """
         A generic method to send requests to Microsoft Graph API.
         """
@@ -39,7 +42,8 @@ class GraphClient:
             url=url,
             headers=headers,
             params=params,
-            json=data
+            json=json,
+            data=data
         )
         # 檢查響應狀態碼
         if response.status_code not in (200, 201):
@@ -181,7 +185,7 @@ class GraphClient:
             response = self._send_request(
                 endpoint='me/findMeetingTimes',
                 method='POST',
-                data=body
+                json=body
             )
         except requests.exceptions.RequestException as e:
             raise Exception(f"Microsoft Graph API Error: {str(e)}")
@@ -251,7 +255,7 @@ class GraphClient:
         response = self._send_request(
             endpoint='me/events',
             method='POST',
-            data=new_event
+            json=new_event
         )
         return response.json()
     def search_email(self, query=None):
@@ -286,6 +290,35 @@ class GraphClient:
 
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Graph API request failed: {e}")
+    def list_drive(self,site_name="NebulaP8group"):
+        url = f"/sites/{self._get_site_id(site_name)}/drives"
+        dn_ls = [drive['name'] for drive in self._send_request(url).json()["value"]]
+        return dn_ls
+    def _get_site_id(self, site_name):
+        url = f"/sites/{self.domain}:/sites/{site_name}"
+        self.site_id = self._send_request(url).json().get("id")
+        return self.site_id
+    def _get_site_and_drive_id(self, site_name, drive_name):
+        site_id = self._get_site_id(site_name)
+        url = f"/sites/{site_id}/drives"
+        for drive in self._send_request(url).json()["value"]:
+            if drive["name"] == drive_name:
+                drive_id = drive["id"]
+                return site_id ,drive_id
+        raise Exception(f"Drive {drive_name} not found")
+    def upload_excel_with_data(self, df, url):
+        # 將 DataFrame 儲存成 Excel 檔（in memory）
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Sheet1')
+        output.seek(0)
+
+        # 使用 Graph API PUT 上傳 Excel
+        # url = f"sites/{site_id}/drives/{drive_id}/root:/{quote(file_path)}:/content"
+        response = self._send_request(url, "PUT", data=output.read())
+        response.raise_for_status()
+        return response.json()  # 含有 webUrl / id 等資訊
+
 
 zone_mappings = {
     'Dateline Standard Time': 'Etc/GMT+12',

@@ -38,7 +38,7 @@
                 <a class="nav-link {% if request.resolver_match.view_name == 'sharepoint_reminder_dashboard' %} active{% endif %}" href="{% url 'sharepoint_reminder_dashboard' %}">SharePoint reminder</a>
               </li>
               <li class="nav-item" data-turbolinks="false">
-                <a class="nav-link {% if request.resolver_match.view_name == 'unanswered_topic' %} active{% endif %}" href="{% url 'unanswered_topic' %}">unanswered_topic</a>
+                <a class="nav-link {% if request.resolver_match.view_name == 'unanswered_topic' %} active{% endif %}" href="{% url 'unanswered_topic' %}">Unanswered topic tracker</a>
               </li>
               
             {% endif %}

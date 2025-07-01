@@ -1,4 +1,35 @@
 services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      - TZ=Asia/Taipei
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=postgresDB
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # 持久化資料
+  celery:
+    build:
+      context: .
+      dockerfile: ./dockerfile
+    container_name: celery
+    command: celery -A automation worker --loglevel=info
+    environment:
+      - TZ=Asia/Taipei
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=postgresDB
+      - POSTGRES_HOST=postgres
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
   web:
     build:
       context: .
@@ -12,6 +43,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - TZ=Asia/Taipei
       - DJANGO_SETTINGS_MODULE=automation.settings
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
@@ -24,6 +56,8 @@ services:
   redis:
     image: redis:latest
     container_name: redis
+    environment:
+      - TZ=Asia/Taipei
     ports:
       - "6379:6379"
     restart: unless-stopped
@@ -32,41 +66,12 @@ services:
     image: rediscommander/redis-commander:latest
     container_name: redis-commander
     environment:
+      - TZ=Asia/Taipei
       - REDIS_HOSTS=local:redis:6379
     ports:
       - "8081:8081"
     depends_on:
       - redis
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:latest
-    container_name: postgres
-    environment:
-      POSTGRES_USER: admin       # 替換為你的資料庫用戶名
-      POSTGRES_PASSWORD: admin # 替換為你的資料庫密碼
-      POSTGRES_DB: postgresDB         # 替換為你的資料庫名稱
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-    volumes:
-      - postgres_data:/var/lib/postgresql/data # 持久化資料
-  celery:
-    build:
-      context: .
-      dockerfile: ./dockerfile
-    container_name: celery
-    command: celery -A automation worker --loglevel=info
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=postgresDB
-      - POSTGRES_HOST=postgres
-    depends_on:
-      - redis
-      - postgres
     restart: unless-stopped
 
   celery-beat:
@@ -76,6 +81,7 @@ services:
     container_name: celery-beat
     command: celery -A automation beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
+      - TZ=Asia/Taipei
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=automation.settings

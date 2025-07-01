@@ -37,7 +37,7 @@ class TeamsClient(GraphClient):
         Send a message to a specific chat.
         """
         endpoint = f"chats/{chat_id}/messages"
-        response = self._send_request(endpoint=endpoint, method = "POST", data=message_payload)
+        response = self._send_request(endpoint=endpoint, method = "POST", json=message_payload)
         if response.status_code >= 300:
             raise Exception(f"Failed to send message: {response.status_code} {response.text}")
         return response.json()['id']

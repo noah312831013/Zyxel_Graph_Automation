@@ -12,10 +12,9 @@ def get_excel_col(col_idx_zero_based):
     return get_column_letter(col_idx_zero_based + 1)
 
 class GraphSharePointClient(TeamsClient):
-    def __init__(self, user_id, domain="unizyx.sharepoint.com", site_name="NebulaP8group", drive_name="ScrumSprints", path="Feature to do list+Q&A/[19.10] Mx Feature_to do list+ Q&A.xlsx"):
+    def __init__(self, user_id, site_name="NebulaP8group", drive_name="ScrumSprints", path="Feature to do list+Q&A/[19.10] Mx Feature_to do list+ Q&A.xlsx"):
         super().__init__(user_id)
         self.path = quote(path)
-        self.domain = domain
         self.site_name = site_name
         self.drive_name = drive_name
         self.site_id = self._get_site_id()
@@ -76,7 +75,7 @@ class GraphSharePointClient(TeamsClient):
         task = TaskNotification.objects.get(uuid=uuid)
         url = self._build_excel_range_url(task.sheet_name, task.field_address)
         payload = {"values": values}
-        self._send_request(endpoint=url, method="POST",data=payload)
+        self._send_request(endpoint=url, method="POST",json=payload)
         print("✅ Updated")
         task.status = TaskNotification.Status.COMPLETED
         task.save()

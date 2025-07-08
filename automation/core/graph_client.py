@@ -294,6 +294,23 @@ class GraphClient:
 
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"Graph API request failed: {e}")
+    def get_all_contacts(self):
+        """
+        Fetch all contacts (users) from Microsoft Graph API, handling pagination.
+        """
+        contacts = []
+        url = "users"
+        while url:
+            data = self._send_request(endpoint=url).json()
+            for user in data.get("value", []):
+                email = user.get("mail") or user.get("userPrincipalName")
+                if email:
+                    contacts.append({
+                        "name": user.get("displayName", ""),
+                        "email": email
+                    })
+            url = data.get('@odata.nextLink', None)
+        return contacts
     def list_drive(self,site_name="NebulaP8group"):
         url = f"/sites/{self._get_site_id(site_name)}/drives"
         dn_ls = [drive['name'] for drive in self._send_request(url).json()["value"]]

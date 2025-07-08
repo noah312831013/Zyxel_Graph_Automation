@@ -12,6 +12,12 @@ from django.contrib import messages
 from .utils import get_attendee_data, inform_attendees
 import uuid
 from django import forms
+from .tasks import process_meeting_status
+from django.views.decorators.http import require_GET
+from django.core.serializers.json import DjangoJSONEncoder
+from django.utils import timezone
+from core.utils import Trie
+from django.core.cache import cache
 
 # 新增一個表單類別
 class TimeSlotPickForm(forms.Form):
@@ -53,6 +59,7 @@ def schedule_meeting(request):
         meeting.status = 'waiting'
         meeting.save()
         inform_attendees(teams_client, meeting)
+        process_meeting_status.delay(str(meeting.uuid))  # 非同步啟動
         context['meeting'] = meeting
         # 清理 session
         del request.session['meeting_data']
@@ -102,7 +109,23 @@ def schedule_meeting(request):
             'current_try': meeting.current_try
         }
         request.session['time_slots'] = time_slots
-        slot_choices = [(str(i), f"{slot['start']} ~ {slot['end']}") for i, slot in enumerate(time_slots)]
+        # 轉換 slot 時間為使用者時區，並格式化顯示
+        from datetime import timezone
+
+        def format_slot_time(slot, tz_info):
+            from dateutil import parser
+            start_utc = parser.isoparse(slot['start'])
+            end_utc = parser.isoparse(slot['end'])
+            # 如果沒有 tzinfo，預設為 UTC
+            if start_utc.tzinfo is None:
+                start_utc = start_utc.replace(tzinfo=timezone.utc)
+            if end_utc.tzinfo is None:
+                end_utc = end_utc.replace(tzinfo=timezone.utc)
+            start_local = start_utc.astimezone(tz_info).strftime('%Y-%m-%d %H:%M')
+            end_local = end_utc.astimezone(tz_info).strftime('%Y-%m-%d %H:%M')
+            return f"{start_local} ~ {end_local}"
+        
+        slot_choices = [(str(i), format_slot_time(slot, tz_info)) for i, slot in enumerate(time_slots)]
         form = TimeSlotPickForm()
         form.fields['time_slots'].choices = slot_choices
         context['form'] = form
@@ -141,6 +164,7 @@ def meeting_response(request):
     # 更新回應
     meeting.update_attendee_response(matched_email, status=response_status)
     meeting.save()
+    process_meeting_status.delay(str(meeting.uuid))  # 觸發 Celery task
     return render(request, 'auto_close.html', {
         'email': matched_email,
         'response': response_status
@@ -256,11 +280,113 @@ def get_contacts(request):
     if not user['is_authenticated']:
         return HttpResponseRedirect(reverse('signin'))
     
-    graph_client = GraphClient(context['user']['id'])
-    query = request.GET.get('query','')  # 確保獲取 query 參數
+    trie = cache.get(f"contacts_trie_{user['id']}")
+    if trie is None:
+        graph_client = GraphClient(context['user']['id'])
+        all_contacts = graph_client.get_all_contacts()  # 你要實作這個方法
+        trie = Trie()
+        for contact in all_contacts:
+            trie.insert(contact, contact['email'])  # 或 contact['name']
+        cache.set(f"contacts_trie_{user['id']}", trie, timeout=3600)
 
-    # 檢查 query 是否為空，若是空則返回錯誤訊息
+    query = request.GET.get('query', '')
     if not query:
-        return
-    contacts = graph_client.search_email(query=query)
-    return JsonResponse(contacts, safe=False)
+        return JsonResponse([], safe=False)
+    results = trie.search_prefix(query)
+    return JsonResponse(results, safe=False)
+@require_GET
+def list_meetings(request):
+    context = initialize_context(request)
+    user = context['user']
+    user_email = None
+    if not user['is_authenticated']:
+        return HttpResponseRedirect(reverse('signin'))
+    if user['is_authenticated']:
+        user_email = user['email']
+
+    if not user_email:
+        return JsonResponse({"meetings": []})
+    # 這裡可以根據需求過濾（如只顯示自己的、或最近一週的）
+    meetings = AutoScheduleMeeting.objects.filter(host_email=user_email).order_by('-created_at')
+    data = []
+    for m in meetings:
+        data.append({
+            "uuid": str(m.uuid),
+            "title": m.title,
+            "status": m.status,
+            "created_at": m.created_at.isoformat() if hasattr(m, "created_at") else "",
+            "host_email": m.host_email,
+        })
+    return JsonResponse({"meetings": data})
+
+from django.shortcuts import get_object_or_404
+
+def meeting_progress_view(request, meeting_uuid):
+    context = initialize_context(request)
+    user = context['user']
+    if not user['is_authenticated']:
+        return HttpResponseRedirect(reverse('signin'))
+    meeting = get_object_or_404(AutoScheduleMeeting, uuid=meeting_uuid)
+    # 你可以複用 meeting_status 裡面準備 context 的那段
+    attendees = []
+    for email, response in meeting.get_attendee_responses().items():
+        status_class = {
+            'pending': 'warning',
+            'accepted': 'success',
+            'declined': 'danger',
+            'tentative': 'info'
+        }.get(response['status'], 'secondary')
+        status_text = {
+            'pending': 'Waiting for response',
+            'accepted': 'Accepted',
+            'declined': 'Declined',
+            'tentative': 'Tentative'
+        }.get(response['status'], '未知')
+        attendees.append({
+            'email': email,
+            'status': response['status'],
+            'status_class': status_class,
+            'status_text': status_text,
+            'response_time': response.get('response_time')
+        })
+
+    status_messages = {
+        'pending': 'Initializng...',
+        'waiting': 'Waiting...',
+        'done': 'Meeting scheduled successfully!',
+        'failed': 'Meeting scheduling failed'
+    }
+    status_classes = {
+        'pending': 'info',
+        'waiting': 'warning',
+        'done': 'success',
+        'failed': 'danger'
+    }
+    context = {
+        'meeting': meeting,
+        'status': meeting.status,
+        'status_message': status_messages.get(meeting.status, 'unkown status'),
+        'status_class': status_classes.get(meeting.status, 'secondary'),
+        'attendees': attendees,
+        'selected_time': meeting.selected_time if meeting.selected_time else None
+    }
+    return render(request, "auto_schedule_meeting_progress.html", context)
+
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+
+@require_POST
+def delete_meeting(request, meeting_uuid):
+    try:
+        meeting = AutoScheduleMeeting.objects.get(uuid=meeting_uuid)
+        # 這裡可以加權限檢查：只能刪除自己的會議
+        user = request.session.get("user")
+        if not user or meeting.host_email != user.get("email"):
+            return JsonResponse({"error": "Permission denied"}, status=403)
+        meeting.delete()
+        return JsonResponse({"success": True})
+    except AutoScheduleMeeting.DoesNotExist:
+        return JsonResponse({"error": "Meeting not found"}, status=404)
+    
+

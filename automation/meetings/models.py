@@ -159,22 +159,23 @@ class AutoScheduleMeeting(models.Model):
         更新當前嘗試次數
         :return: None
         """
-        if self.current_try >= len(self.candidate_times):
+        if self.current_try >= len(json.loads(self.candidate_times))-1:
+            self.status = 'failed'
+            self.save()
             raise ValueError("No more candidate times available.")
-        self.current_try += 1
-        responses = self.get_attendee_responses()
-        for email in responses:
-            responses[email]['status'] = 'pending'
-            responses[email]['response_time'] = None
-        self.attendee_responses = json.dumps(responses)
-        self.save()
+        else:
+            self.current_try += 1
+            responses = self.get_attendee_responses()
+            for email in responses:
+                responses[email]['status'] = 'pending'
+                responses[email]['response_time'] = None
+            self.attendee_responses = json.dumps(responses)
+            self.save()
     def get_candidate_time(self):
-        """
-        獲取當前嘗試的候選時間
-        :return: 包含 'start' 和 'end' 的字典，或 None 如果沒有更多候選時間
-        """
-        return self.get_candidate_times()[self.current_try] if self.current_try < len(self.candidate_times) else None
-       
+        candidate_times = self.get_candidate_times()
+        if not candidate_times or self.current_try < 0 or self.current_try >= len(candidate_times):
+            return None
+        return candidate_times[self.current_try]
 
     class Meta:
         ordering = ['-created_at']

@@ -34,7 +34,7 @@ def get_attendee_data(graph_client: TeamsClient, attendees):
     except Exception as e:
         raise ValueError(f"Error fetching attendee data: {str(e)}")
 
-def create_card_payload(subject, start_time, end_time, user_id, uuid, base_response_url='http:/localhost/webhook/response/'):
+def create_card_payload(subject, start_time, end_time, user_id, uuid, base_response_url='http:/localhost/webhook/response/',desc=None):
     card = {
         "type": "AdaptiveCard",
         "version": "1.4",
@@ -47,8 +47,8 @@ def create_card_payload(subject, start_time, end_time, user_id, uuid, base_respo
             },
             {
                 "type": "TextBlock",
-                "text": f"🕒 時間: {start_time} ~ {end_time}"
-            }
+                "text": f"🕒 時間: {start_time.strftime('%Y-%m-%d %H:%M')} ~ {end_time.strftime('%Y-%m-%d %H:%M')}"
+            },
         ],
         "actions": [
             {
@@ -67,7 +67,7 @@ def create_card_payload(subject, start_time, end_time, user_id, uuid, base_respo
     card_payload = {
         "body": {
             "contentType": "html",
-            "content": "This message was sent automatically by the Microsoft Automation Tool. <attachment id=\"1\"></attachment>"
+            "content": desc+'<attachment id=\"1\"></attachment>' if desc else "This message was sent automatically by the Microsoft Automation Tool. <attachment id=\"1\"></attachment>"
         },
         "attachments": [
             {
@@ -80,6 +80,8 @@ def create_card_payload(subject, start_time, end_time, user_id, uuid, base_respo
 
     return card_payload
 
+from dateutil import parser
+
 def inform_attendees(teams_client: TeamsClient, meeting: 'AutoScheduleMeeting'):
     redirect = AuthHelper().settings['redirect']
     attendee_responses = meeting.get_attendee_responses()
@@ -90,11 +92,12 @@ def inform_attendees(teams_client: TeamsClient, meeting: 'AutoScheduleMeeting'):
         if chat_id:
             card_payload = create_card_payload(
                 subject=meeting.title,
-                start_time=meeting.get_candidate_time()['start'],
-                end_time=meeting.get_candidate_time()['end'],
+                start_time=parser.isoparse(meeting.get_candidate_time()['start']).astimezone(),
+                end_time=parser.isoparse(meeting.get_candidate_time()['end']).astimezone(),
                 user_id=user_id,
                 uuid = meeting.uuid,
-                base_response_url=f"{redirect.replace("/callback","")}/meetings/webhook/response/"
+                base_response_url=f"{redirect.replace("/callback","")}/meetings/webhook/response/",
+                desc=meeting.description
             )
             try:
                 response = teams_client.send_message_to_chat(chat_id, card_payload)

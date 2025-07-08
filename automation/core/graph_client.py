@@ -32,7 +32,12 @@ class GraphClient:
             user = None
         if not user:
             raise ValueError(f"UserToken not found for user_id: {self.user_id}")
-        url = f'{self.base_url}/{endpoint}'
+        
+        if endpoint.startswith('http'):
+            url = endpoint
+        else:
+            url = f'{self.base_url.rstrip("/")}/{endpoint.lstrip("/")}'
+            
         headers = {
             'Authorization': f'Bearer {user.get_token()}',
             'Content-Type': 'application/json'
@@ -276,7 +281,6 @@ class GraphClient:
             data = self._send_request(endpoint=endpoint, params=params).json()
             if "value" not in data:
                 raise ValueError("Invalid response from Graph API")
-            data = data.json()
             contacts = []
             for user in data["value"]:
                 email = user.get("mail") or user.get("userPrincipalName")

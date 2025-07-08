@@ -1,0 +1,11 @@
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="pick_time_slots" value="1">
+  {{ form.non_field_errors }}
+  {{ form.time_slots.errors }}
+  <fieldset>
+    <legend>請選擇會議時間</legend>
+    {{ form.time_slots }}        {# Checkbox list #}
+  </fieldset>
+  <button class="btn btn-success" type="submit">確定並排程</button>
+</form>

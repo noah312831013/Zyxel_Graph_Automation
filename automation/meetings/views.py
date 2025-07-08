@@ -11,34 +11,63 @@ from .models import AutoScheduleMeeting
 from django.contrib import messages
 from .utils import get_attendee_data, inform_attendees
 import uuid
+from django import forms
+
+# 新增一個表單類別
+class TimeSlotPickForm(forms.Form):
+    time_slots = forms.MultipleChoiceField(
+        widget=forms.CheckboxSelectMultiple,
+        label="請選擇會議時間",
+        required=True
+    )
 
 def schedule_meeting(request):
     context = initialize_context(request)
     user = context['user']
+    time_zone = get_iana_from_windows(user['timeZone'])
+    tz_info = tz.gettz(time_zone)
     if not user['is_authenticated']:
         return HttpResponseRedirect(reverse('signin'))
     teams_client = TeamsClient(context['user']['id'])
+
+    # 判斷是否為第二步（選時段）
+    if request.method == 'POST' and 'pick_time_slots' in request.POST:
+        selected_indexes = request.POST.getlist('time_slots')
+        meeting_data = request.session.get('meeting_data')
+        time_slots = request.session.get('time_slots')
+        if not meeting_data or not time_slots:
+            messages.error(request, "Session expired, please re-submit meeting info.")
+            return render(request, 'auto_schedule_meeting.html', context)
+        # 取出被選中的 slot 資料，並轉換為使用者時區
+        def convert_slot_to_user_tz(slot, tz_info):
+            import copy
+            slot = copy.deepcopy(slot)
+            start_utc = parser.isoparse(slot['start'])
+            end_utc = parser.isoparse(slot['end'])
+            slot['start'] = start_utc.astimezone(tz_info).isoformat()
+            slot['end'] = end_utc.astimezone(tz_info).isoformat()
+            return slot
+        selected_slots = [convert_slot_to_user_tz(time_slots[int(idx)], tz_info) for idx in selected_indexes]
+        meeting = AutoScheduleMeeting(**meeting_data)
+        meeting.set_candidate_times(selected_slots)
+        meeting.status = 'waiting'
+        meeting.save()
+        inform_attendees(teams_client, meeting)
+        context['meeting'] = meeting
+        # 清理 session
+        del request.session['meeting_data']
+        del request.session['time_slots']
+        return render(request, 'auto_schedule_meeting_progress.html', context)
+
     if request.method == 'POST':
-        # 獲取時區信息
-        time_zone = get_iana_from_windows(user['timeZone'])
-        tz_info = tz.gettz(time_zone)
-        
-        # 解析並添加時區信息到日期時間
         start_time = parser.parse(request.POST.get('start_time'))
         end_time = parser.parse(request.POST.get('end_time'))
-        
-        # 如果日期時間沒有時區信息，添加用戶的時區
         if start_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=tz_info)
         if end_time.tzinfo is None:
             end_time = end_time.replace(tzinfo=tz_info)
-
-
-        # 獲取與會者信息
         attendees = request.POST.getlist('attendees')
         attendees_data = get_attendee_data(teams_client, attendees)
-
-        # 創建新的排程記錄
         meeting = AutoScheduleMeeting(
             title=request.POST.get('title'),
             description=request.POST.get('description'),
@@ -47,31 +76,37 @@ def schedule_meeting(request):
             end_time=end_time,
             status='pending'
         )
-        
-        # 設置與會者
         meeting.set_attendees(attendees_data)
         meeting.host_email = request.session.get("user").get("email")
         meeting.time_zone = time_zone
-
-        # 嘗試獲取候選時間
         try:
             time_slots = teams_client.get_meeting_times_slots(meeting, time_zone)
         except Exception as e:
             messages.error(request, "cannot find available time for meeting for all attendees")
             return render(request, 'tutorial/auto_schedule_meeting.html', context)
-
         if not time_slots:
             messages.error(request, "cannot find available time for meeting for all attendees")
             return render(request, 'tutorial/auto_schedule_meeting.html', context)
-        
-        # 設定候選時間並儲存
-        meeting.set_candidate_times(time_slots)
-        meeting.status = 'waiting'
-        meeting.save()
-
-        inform_attendees(token, meeting)
-        context['meeting'] = meeting
-        return render(request, 'auto_schedule_meeting_progress.html', context)
+        # 將 meeting 相關資料與 time_slots 暫存於 session
+        request.session['meeting_data'] = {
+            'title': meeting.title,
+            'description': meeting.description,
+            'duration': meeting.duration,
+            'start_time': meeting.start_time.isoformat(),
+            'end_time': meeting.end_time.isoformat(),
+            'status': meeting.status,
+            'host_email': meeting.host_email,
+            'time_zone': meeting.time_zone,
+            'attendees': meeting.attendees,
+            'attendee_responses': meeting.attendee_responses,
+            'current_try': meeting.current_try
+        }
+        request.session['time_slots'] = time_slots
+        slot_choices = [(str(i), f"{slot['start']} ~ {slot['end']}") for i, slot in enumerate(time_slots)]
+        form = TimeSlotPickForm()
+        form.fields['time_slots'].choices = slot_choices
+        context['form'] = form
+        return render(request, 'pick_time_slots.html', context)
 
     return render(request, 'auto_schedule_meeting.html', context)
 

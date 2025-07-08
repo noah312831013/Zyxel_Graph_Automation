@@ -100,7 +100,7 @@
 
 <script>
 function updateStatus() {
-    fetch(`meetings/meeting-status/{{ meeting.uuid }}/`)
+    fetch(`/meetings/meeting-status/{{ meeting.uuid }}/`)
         .then(response => response.json())
         .then(data => {
             // 更新狀態消息

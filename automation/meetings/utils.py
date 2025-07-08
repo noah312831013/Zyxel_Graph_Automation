@@ -81,7 +81,7 @@ def create_card_payload(subject, start_time, end_time, user_id, uuid, base_respo
     return card_payload
 
 def inform_attendees(teams_client: TeamsClient, meeting: 'AutoScheduleMeeting'):
-    redirect = AuthHelper().setting['redirect']
+    redirect = AuthHelper().settings['redirect']
     attendee_responses = meeting.get_attendee_responses()
     for email, data in attendee_responses.items():
         chat_id = data.get('chat_id')
@@ -94,13 +94,13 @@ def inform_attendees(teams_client: TeamsClient, meeting: 'AutoScheduleMeeting'):
                 end_time=meeting.get_candidate_time()['end'],
                 user_id=user_id,
                 uuid = meeting.uuid,
-                base_response_url=f"{redirect.replace("/callback","")}/webhook/response/"
+                base_response_url=f"{redirect.replace("/callback","")}/meetings/webhook/response/"
             )
-            response = teams_client.send_message_to_chat(chat_id, card_payload)
-
-            if response.status_code >= 300:
+            try:
+                response = teams_client.send_message_to_chat(chat_id, card_payload)
+            except Exception as e:
                 print(f"[❌] Failed to send card to {email} (chat_id: {chat_id})")
-                print(f"Response: {response.status_code} - {response.text}")
+                print(f"Error: {e}")
             else:
                 print(f"[✅] Card sent to {email}")
         else:

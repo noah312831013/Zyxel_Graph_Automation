@@ -18,6 +18,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from core.utils import Trie
 from django.core.cache import cache
+from datetime import timedelta
 
 # 新增一個表單類別
 class TimeSlotPickForm(forms.Form):
@@ -44,17 +45,9 @@ def schedule_meeting(request):
         if not meeting_data or not time_slots:
             messages.error(request, "Session expired, please re-submit meeting info.")
             return render(request, 'auto_schedule_meeting.html', context)
-        # 取出被選中的 slot 資料，並轉換為使用者時區
-        def convert_slot_to_user_tz(slot, tz_info):
-            import copy
-            slot = copy.deepcopy(slot)
-            start_utc = parser.isoparse(slot['start'])
-            end_utc = parser.isoparse(slot['end'])
-            slot['start'] = start_utc.astimezone(tz_info).isoformat()
-            slot['end'] = end_utc.astimezone(tz_info).isoformat()
-            return slot
-        selected_slots = [convert_slot_to_user_tz(time_slots[int(idx)], tz_info) for idx in selected_indexes]
+        selected_slots = [time_slots[int(idx)] for idx in selected_indexes]
         meeting = AutoScheduleMeeting(**meeting_data)
+        print(selected_slots)
         meeting.set_candidate_times(selected_slots)
         meeting.status = 'waiting'
         meeting.save()
@@ -67,8 +60,10 @@ def schedule_meeting(request):
         return render(request, 'auto_schedule_meeting_progress.html', context)
 
     if request.method == 'POST':
+        # 當前地區的時間
         start_time = parser.parse(request.POST.get('start_time'))
         end_time = parser.parse(request.POST.get('end_time'))
+
         if start_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=tz_info)
         if end_time.tzinfo is None:
@@ -176,49 +171,48 @@ def meeting_status(request, meeting_uuid):
     try:
         meeting = AutoScheduleMeeting.objects.get(uuid=meeting_uuid)
         # 更新會議狀態邏輯
-        if meeting.status == 'waiting':
-            response_summary = meeting.get_response_summary()
+        # if meeting.status == 'waiting':
+        #     response_summary = meeting.get_response_summary()
 
-            # 如果有與會者拒絕，嘗試下一個候選時間
-            if response_summary['declined'] > 0:
-                try:
-                    # declined_attendees = [email for email, response in meeting.get_attendee_responses().items() if response['status'] == 'declined']
-                    # declined_list = ', '.join(declined_attendees)
-                    # declined_html = ''.join(f"<li>{email}</li>" for email in declined_list)
-                    # msg = (
-                    #     f"<p><strong>⚠️ A participant has <span style='color:red;'>declined</span> the meeting.</strong></p>"
-                    #     f"<p><strong>Declined by:</strong></p>"
-                    #     f"<ul>{declined_html}</ul>"
-                    #     f"<p><strong>Meeting UUID:</strong> <code>{meeting.uuid}</code></p>"
-                    #     f"<p><strong>Declined meeting time:</strong><br>"
-                    #     f"<span style='color:#0078D4;'>{meeting.get_candidate_time()['start']} - {meeting.get_candidate_time()['end']}</span></p>"
-                    # )
-                    # 更新下一段時間並初始化與會者狀態
-                    meeting.try_next()
-                    # inform_attendees(token, meeting, msg)
-                    # 通知與會者
-                    inform_attendees(teams_client, meeting)
-                except ValueError:
-                    # 沒有更多候選時間，標記為失敗
-                    meeting.status = 'failed'
-                meeting.save()
+        #     # 如果有與會者拒絕，嘗試下一個候選時間
+        #     if response_summary['declined'] > 0:
+        #         try:
+        #             # declined_attendees = [email for email, response in meeting.get_attendee_responses().items() if response['status'] == 'declined']
+        #             # declined_list = ', '.join(declined_attendees)
+        #             # declined_html = ''.join(f"<li>{email}</li>" for email in declined_list)
+        #             # msg = (
+        #             #     f"<p><strong>⚠️ A participant has <span style='color:red;'>declined</span> the meeting.</strong></p>"
+        #             #     f"<p><strong>Declined by:</strong></p>"
+        #             #     f"<ul>{declined_html}</ul>"
+        #             #     f"<p><strong>Meeting UUID:</strong> <code>{meeting.uuid}</code></p>"
+        #             #     f"<p><strong>Declined meeting time:</strong><br>"
+        #             #     f"<span style='color:#0078D4;'>{meeting.get_candidate_time()['start']} - {meeting.get_candidate_time()['end']}</span></p>"
+        #             # )
+        #             # 更新下一段時間並初始化與會者狀態
+        #             meeting.try_next()
+        #             # inform_attendees(token, meeting, msg)
+        #             # 通知與會者
+        #             inform_attendees(teams_client, meeting)
+        #         except ValueError:
+        #             # 沒有更多候選時間，標記為失敗
+        #             meeting.status = 'failed'
+        #         meeting.save()
 
-            # 如果所有人都接受，更新狀態為 'done' 並設置選定時間
-            elif response_summary['pending'] == 0 and response_summary['declined'] == 0:
-                meeting.status = 'done'
-                meeting.selected_time = meeting.get_candidate_time()
-                meeting.save()
-                # 寄出會議邀請
-                attendees_emails = [email for email in meeting.get_attendee_responses().keys()]
-                attendees_emails.append(meeting.host_email)
-                res = teams_client.create_event(
-                    meeting.title,
-                    meeting.selected_time["start"],
-                    meeting.selected_time["end"],
-                    attendees_emails,
-                    meeting.description,
-                    meeting.time_zone
-                )
+        #     # 如果所有人都接受，更新狀態為 'done' 並設置選定時間
+        #     elif response_summary['pending'] == 0 and response_summary['declined'] == 0:
+        #         meeting.status = 'done'
+        #         meeting.selected_time = meeting.get_candidate_time()
+        #         meeting.save()
+        #         # 寄出會議邀請
+        #         attendees_emails = [email for email in meeting.get_attendee_responses().keys()]
+        #         attendees_emails.append(meeting.host_email)
+        #         res = teams_client.create_event(
+        #             meeting.title,
+        #             meeting.selected_time["start"],
+        #             meeting.selected_time["end"],
+        #             attendees_emails,
+        #             meeting.description
+        #         )
 
         # 準備與會者數據
         attendees = []
@@ -327,6 +321,7 @@ def meeting_progress_view(request, meeting_uuid):
     if not user['is_authenticated']:
         return HttpResponseRedirect(reverse('signin'))
     meeting = get_object_or_404(AutoScheduleMeeting, uuid=meeting_uuid)
+    
     # 你可以複用 meeting_status 裡面準備 context 的那段
     attendees = []
     for email, response in meeting.get_attendee_responses().items():
@@ -362,8 +357,10 @@ def meeting_progress_view(request, meeting_uuid):
         'done': 'success',
         'failed': 'danger'
     }
+    candidate_time = meeting.get_candidate_time(tz=get_iana_from_windows(user['timeZone']))
     context = {
         'meeting': meeting,
+        'candidate_time':candidate_time,
         'status': meeting.status,
         'status_message': status_messages.get(meeting.status, 'unkown status'),
         'status_class': status_classes.get(meeting.status, 'secondary'),

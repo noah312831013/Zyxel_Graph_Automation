@@ -1,3 +1,8 @@
+/* 表格圓角設定 */
+table.table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
 html, body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -48,10 +53,10 @@ label {
 }
 
 .glass-navbar {
-  background: rgba(255, 255, 255, 0.594); /* 半透明黑色背景 */
-  backdrop-filter: blur(20px); /* 毛玻璃效果 */
+  background: rgba(255, 255, 255, 0.15); /* 半透明黑色背景 */
+  backdrop-filter: blur(15px); /* 毛玻璃效果 */
   border-bottom: 1.5px solid rgba(171, 171, 171, 0.2); /* 添加邊框 */
-  border: 0.5px solid rgba(255, 255, 255, 0.77); /* 添加線框 */
+  /* border: 0.5px solid rgba(255, 255, 255, 0.77); */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* 陰影效果 */
 }
 
@@ -72,4 +77,173 @@ label {
   color: rgb(0, 0, 0) !important; /* 將文字顏色設置為白色 */
   font-size: 20px;
   font-weight: bold;
+}
+
+/* 預設淺色模式 */
+body {
+  background: #f8f9fa;
+  color: #222;
+}
+
+/* 暗黑模式 */
+body.dark-mode {
+  background: #121212;
+  color: #ddd;
+}
+
+body.dark-mode .glass-navbar {
+  background: rgba(30, 30, 30, 0.8);
+  border-bottom: 1.5px solid rgba(100, 100, 100, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+body.dark-mode a.nav-link,
+body.dark-mode a.navbar-brand {
+  color: #eee !important;
+}
+
+body.dark-mode a.nav-link.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff !important;
+}
+
+/* 主內容背景可根據需要調整 */
+main.container {
+  background: transparent;
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: #2c2c2c;
+  color: #eee;
+  border: 1px solid #555;
+  caret-color: #fff;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #aaa;
+}
+
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  border-color: #7a64ff;
+  outline: none;
+  box-shadow: 0 0 5px #7a64ff;
+}
+
+/* 暗黑模式下的表格調整 */
+body.dark-mode table.table {
+  background-color: #1e1e1e;
+  color: #ddd;
+  border-color: #444;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+body.dark-mode table.table th,
+body.dark-mode table.table td {
+  border-color: #444;
+}
+
+body.dark-mode table.table thead.thead-dark th {
+  background-color: #2c2c2c;
+  color: #eee;
+  border-color: #555;
+}
+
+/* 按鈕也調暗一些 */
+body.dark-mode .btn-primary {
+  background-color: #5757d1;
+  border-color: #4747b0;
+  color: #eee;
+}
+
+body.dark-mode .btn-primary:hover {
+  background-color: #7575ee;
+  border-color: #5a5ae0;
+  color: #fff;
+}
+
+body.dark-mode .btn-danger {
+  background-color: #d14848;
+  border-color: #a93a3a;
+  color: #fff;
+}
+
+body.dark-mode .btn-danger:hover {
+  background-color: #e86464;
+  border-color: #bf4c4c;
+  color: #fff;
+}
+
+/* 暗黑模式卡片樣式 */
+body.dark-mode .card {
+  background-color: #1e1e1e;
+  color: #ddd;
+  border: 1px solid #444;
+}
+
+body.dark-mode .card-header {
+  background-color: #2c2c2c;
+  color: #eee;
+  border-bottom: 1px solid #555;
+}
+
+body.dark-mode .card-body {
+  background-color: transparent;
+  color: #ddd;
+}
+
+/* 表格在暗黑模式已處理，確保繼續生效 */
+/* Badge 調色 */
+body.dark-mode .badge.bg-warning {
+  background-color: #ffb347;
+  color: #3d3d00;
+}
+body.dark-mode .badge.bg-success {
+  background-color: #4caf50;
+  color: #d0f0c0;
+}
+body.dark-mode .badge.bg-danger {
+  background-color: #e57373;
+  color: #3f0000;
+}
+body.dark-mode .badge.bg-info {
+  background-color: #64b5f6;
+  color: #002f5d;
+}
+
+/* Alert 調整 */
+body.dark-mode .alert-info {
+  background-color: #264653;
+  color: #a2d2ff;
+  border-color: #1b3a4b;
+}
+
+body.dark-mode .alert-success {
+  background-color: #2a7f62;
+  color: #d4f4dd;
+  border-color: #1f5e43;
+}
+
+body.dark-mode .alert-danger {
+  background-color: #7f1d1d;
+  color: #f9d6d5;
+  border-color: #5a1212;
+}
+/* 淺色主題下的 jumbotron */
+.custom-jumbotron {
+  background-color: #f0f0f0;
+  color: #222;
+  padding: 2rem 1rem;
+  border-radius: 0.5rem;
+}
+
+/* 暗黑模式下的 jumbotron */
+body.dark-mode .custom-jumbotron {
+  background-color: #1f1f1f;
+  color: #eee;
 }

@@ -44,7 +44,12 @@
             {% endif %}
           </ul>
           <ul class="navbar-nav justify-content-end">
-            <li class="nav-item">
+            <li class="nav-item d-flex align-items-center">
+              <a href="#" id="darkModeToggle" class="nav-link d-flex align-items-center" style="cursor: pointer;">
+                🌙
+              </a>
+            </li>
+            <li class="nav-item d-flex align-items-center">
               <a class="nav-link external-link" href="https://developer.microsoft.com/graph/docs/concepts/overview" target="_blank">
                 <i class="ms-Icon ms-Icon--NavigateExternalInline mr-1" aria-hidden="true"></i>Docs
               </a>
@@ -96,6 +101,40 @@
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('main').classList.add('fade-in');
+      });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const toggleBtn = document.getElementById('darkModeToggle');
+        const body = document.body;
+
+        // 如果 localStorage 沒有記錄，根據系統偏好決定
+        if (localStorage.getItem('dark-mode') === null) {
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) {
+            body.classList.add('dark-mode');
+            localStorage.setItem('dark-mode', 'true');
+          }
+        }
+
+        // 如果 localStorage 有記錄就套用
+        if (localStorage.getItem('dark-mode') === 'true') {
+          body.classList.add('dark-mode');
+        }
+
+        function updateText() {
+          toggleBtn.textContent = body.classList.contains('dark-mode') ? '☀' : '☾';
+        }
+
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          body.classList.toggle('dark-mode');
+          // 記住使用者選擇
+          localStorage.setItem('dark-mode', body.classList.contains('dark-mode'));
+          updateText();
+        });
+
+        updateText();
       });
     </script>
   </body>

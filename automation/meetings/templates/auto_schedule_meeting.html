@@ -17,9 +17,16 @@
     <div class="form-group" style="flex: 1 1 200px;">
       <label for="attendees">Attendees</label>
       <div id="attendees-container">
-        <div class="attendee-input mb-2 me-2 position-relative">
+        <div class="attendee-input mb-2 me-2 position-relative d-flex align-items-center">
           <input class="form-control attendee-email" name="attendees" type="email" placeholder="Search attendees" required oninput="autocompleteAttendee(this)" style="max-width: 100%;">
           <div class="autocomplete-suggestions dropdown-menu"></div>
+          <button type="button" 
+                  class="btn btn-outline-danger btn-sm" 
+                  style="height: 38px;width: 42px; margin-left: 2px;" 
+                  onclick="removeAttendee(this)" 
+                  title="Remove attendee">
+            &times;
+          </button>
         </div>
       </div>
       <button type="button" class="btn btn-secondary mt-2" onclick="addAttendee()">Add attendee</button>
@@ -133,23 +140,37 @@
     const container = document.getElementById("attendees-container");
 
     const wrapper = document.createElement("div");
-    wrapper.className = "attendee-input mb-2 me-2 position-relative";
+    wrapper.className = "attendee-input mb-2 me-2 position-relative d-flex align-items-center";
 
     const input = document.createElement("input");
-    input.className = "form-control";
+    input.className = "form-control attendee-email";
     input.name = "attendees";
     input.type = "email";
     input.placeholder = "enter email";
     input.required = true;
-
+    input.style.maxWidth = "100%";
     input.addEventListener("input", () => autocompleteAttendee(input));
 
     const dropdown = document.createElement("div");
     dropdown.className = "autocomplete-suggestions dropdown-menu";
 
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn btn-outline-danger btn-sm ms-2";
+    removeBtn.style="height: 38px; margin-left: 2px" 
+    removeBtn.title = "Remove attendee";
+    removeBtn.innerHTML = "&times;";
+    removeBtn.onclick = function() { removeAttendee(removeBtn); };
+
     wrapper.appendChild(input);
     wrapper.appendChild(dropdown);
+    wrapper.appendChild(removeBtn);
     container.appendChild(wrapper);
+  }
+
+  function removeAttendee(btn) {
+    const wrapper = btn.closest('.attendee-input');
+    if (wrapper) wrapper.remove();
   }
 
   // 初始化：載入 contactors 並綁定初始欄位的 autocomplete

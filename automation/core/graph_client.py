@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 GRAPH_URL = 'https://graph.microsoft.com/v1.0'
 from core.models import UserToken
 from urllib.parse import quote
+from datetime import timezone as TZ
 
 class GraphClient:
     def __init__(self, user_id):
@@ -170,6 +171,7 @@ class GraphClient:
                 } for email in attendees_list
             ],
             "timeConstraint": {
+                "activityDomain": "work",
                 "timeslots": [
                     {
                         "start": {
@@ -202,16 +204,20 @@ class GraphClient:
         meeting_times = []
         for suggestion in response.get("meetingTimeSuggestions", []):
             slot = suggestion["meetingTimeSlot"]
+
             start_dt_raw = parse_datetime(slot["start"]["dateTime"])
             end_dt_raw = parse_datetime(slot["end"]["dateTime"])
+
             if start_dt_raw:
-                start_dt = start_dt_raw.isoformat()
+                start_dt = start_dt_raw.replace(tzinfo=TZ.utc).isoformat()
             else:
                 raise ValueError(f"Invalid start datetime format: {slot['start']['dateTime']}")
+
             if end_dt_raw:
-                end_dt = end_dt_raw.isoformat()
+                end_dt = end_dt_raw.replace(tzinfo=TZ.utc).isoformat()
             else:
                 raise ValueError(f"Invalid end datetime format: {slot['end']['dateTime']}")
+
             meeting_times.append({
                 "confidence": suggestion["confidence"],
                 "attendeeAvailability": suggestion["attendeeAvailability"],

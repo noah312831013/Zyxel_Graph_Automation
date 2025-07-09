@@ -2,6 +2,7 @@ from django.db import models
 import json
 import uuid
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # Create your models here.
 class AutoScheduleMeeting(models.Model):
@@ -170,12 +171,27 @@ class AutoScheduleMeeting(models.Model):
                 responses[email]['status'] = 'pending'
                 responses[email]['response_time'] = None
             self.attendee_responses = json.dumps(responses)
-            self.save()
-    def get_candidate_time(self):
+    def get_candidate_time(self, tz: str = "Asia/Taipei"):
         candidate_times = self.get_candidate_times()
         if not candidate_times or self.current_try < 0 or self.current_try >= len(candidate_times):
             return None
-        return candidate_times[self.current_try]
+
+        raw = candidate_times[self.current_try]
+
+        try:
+            start_utc = datetime.fromisoformat(raw["start"])
+            end_utc = datetime.fromisoformat(raw["end"])
+            local_tz = ZoneInfo(tz)
+
+            return {
+                "start": start_utc.astimezone(local_tz).strftime("%Y-%m-%d %H:%M"),
+                "end": end_utc.astimezone(local_tz).strftime("%Y-%m-%d %H:%M"),
+                "confidence": raw["confidence"],
+                "attendeeAvailability": raw["attendeeAvailability"]
+            }
+        except Exception as e:
+            print(f"⚠️ get_candidate_time 時間轉換失敗: {e}")
+            return raw  # fallback 回原始格式
 
     class Meta:
         ordering = ['-created_at']

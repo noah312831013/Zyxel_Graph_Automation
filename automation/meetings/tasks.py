@@ -31,7 +31,6 @@ def process_meeting_status(meeting_uuid):
                     meeting.selected_time["end"],
                     attendees_emails,
                     meeting.description,
-                    meeting.time_zone
                 )
     except AutoScheduleMeeting.DoesNotExist:
         pass

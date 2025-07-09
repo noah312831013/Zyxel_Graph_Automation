@@ -21,7 +21,7 @@
           <input class="form-control attendee-email" name="attendees" type="email" placeholder="Search attendees" required oninput="autocompleteAttendee(this)" style="max-width: 100%;">
           <div class="autocomplete-suggestions dropdown-menu"></div>
           <button type="button" 
-                  class="btn btn-outline-danger btn-sm" 
+                  class="btn btn-danger btn-sm" 
                   style="height: 38px;width: 42px; margin-left: 2px;" 
                   onclick="removeAttendee(this)" 
                   title="Remove attendee">
@@ -146,7 +146,7 @@
     input.className = "form-control attendee-email";
     input.name = "attendees";
     input.type = "email";
-    input.placeholder = "enter email";
+    input.placeholder = "Search attendees";
     input.required = true;
     input.style.maxWidth = "100%";
     input.addEventListener("input", () => autocompleteAttendee(input));
@@ -156,8 +156,8 @@
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
-    removeBtn.className = "btn btn-outline-danger btn-sm ms-2";
-    removeBtn.style="height: 38px; margin-left: 2px" 
+    removeBtn.className = "btn btn-danger btn-sm ms-2";
+    removeBtn.style= "height: 38px;width: 42px; margin-left: 2px;"  
     removeBtn.title = "Remove attendee";
     removeBtn.innerHTML = "&times;";
     removeBtn.onclick = function() { removeAttendee(removeBtn); };

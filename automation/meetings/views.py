@@ -283,7 +283,7 @@ def get_contacts(request):
     trie = cache.get(f"contacts_trie_{user['id']}")
     if trie is None:
         graph_client = GraphClient(context['user']['id'])
-        all_contacts = graph_client.get_all_contacts()  # 你要實作這個方法
+        all_contacts = graph_client.get_all_contacts()
         trie = Trie()
         for contact in all_contacts:
             trie.insert(contact, contact['email'])  # 或 contact['name']

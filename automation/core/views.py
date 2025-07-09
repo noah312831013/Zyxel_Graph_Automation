@@ -8,7 +8,6 @@ from datetime import timedelta
 from automation.celery import debug_task
 import requests
 import base64
-# Create your views here.
 def initialize_context(request):
     context = {}
 

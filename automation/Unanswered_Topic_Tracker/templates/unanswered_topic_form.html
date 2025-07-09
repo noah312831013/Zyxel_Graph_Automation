@@ -54,9 +54,7 @@
 <div>
 <hr>
 <h3>Current Scheduled Tasks</h3>
-<div id="task-list">
-  <em>Loading...</em>
-</div>
+<div id="task-list"></div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -90,7 +88,7 @@
       .then(data => {
         const list = document.getElementById("task-list");
         if (!data.tasks.length) {
-          list.innerHTML = "<em>No task</em>";
+          list.innerHTML = '<div class="alert alert-info">No task</div>';
           return;
         }
         list.innerHTML = `

@@ -11,11 +11,10 @@
   </div>
   <button type="button" id="start-tasks" class="btn btn-primary">Start</button>
 </form>
-
-<h2>Current Tasks</h2>
-<div id="tracking-table-container">
-    <em>Loading...</em>
-</div>
+<hr>
+<h3>Current Tasks</h2>
+<div id="tracking-table-container"></div>
+</hr>
 
 {% endblock %}
 {% block scripts %}
@@ -26,7 +25,7 @@
       const container = $("#tracking-table-container");
       container.empty();
       if (data.length === 0) {
-        container.html("<em>No tracking items.</em>");
+        container.html('<div class="alert alert-info">No task</div>');
         return;
       }
       let table = `

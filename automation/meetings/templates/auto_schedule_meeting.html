@@ -197,7 +197,7 @@
     const data = await res.json();
     const list = document.getElementById('meetings-list');
     if (!data.meetings || data.meetings.length === 0) {
-      list.innerHTML = '<div class="alert alert-info">沒有任務</div>';
+      list.innerHTML = '<div class="alert alert-info">No task</div>';
       return;
     }
     list.innerHTML = `

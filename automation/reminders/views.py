@@ -176,11 +176,16 @@ def delete_task(request):
             file_path=file_path,
             host_id=context['user']['id']
         ).delete()
-        # 再刪除 TaskManager
-        TaskManager.objects.filter(
+        # 取得並刪除對應的 PeriodicTask
+        tasks = TaskManager.objects.filter(
             drive_name=drive_name,
             file_path=file_path,
             host_id=context['user']['id']
-        ).delete()
+        )
+        for task in tasks:
+            if task.periodic_task:
+                task.periodic_task.delete()
+        # 再刪除 TaskManager
+        tasks.delete()
         return JsonResponse({"status": "ok"})
     return JsonResponse({"error": "Invalid request"}, status=400)

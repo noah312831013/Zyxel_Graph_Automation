@@ -36,12 +36,12 @@ class TaskNotification(models.Model):
         return f"{self.sheet_name} - Row {self.row}: {self.task}"
 
 class TaskManager(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)  # 新增 UUID 欄位
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True,primary_key=True)  # 新增 UUID 欄位
     celery_task_id = models.CharField(max_length=255, null=True, blank=True, default=None)
     site_name = models.CharField(max_length=255)
     drive_name = models.CharField(max_length=255)
     file_path = models.CharField(max_length=255)
-    notify_interval = models.IntegerField(default=60)  # in seconds
+    notify_interval = models.IntegerField(default=60)  # in min
     last_notified_at = models.DateTimeField(null=True, blank=True,default=None)
     next_notify_time = models.DateTimeField(null=True, blank=True,default=None)
     host_id = models.CharField(max_length=255)

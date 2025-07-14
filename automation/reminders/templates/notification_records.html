@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>All notifications</h2>
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% elif notifications %}
+<table class="table table-bordered table-striped" id="tracking-table">
+    <thead class="thead-dark">
+      <tr>
+        <th>Created_at</th>
+        <th>Status</th>
+        <th>Task</th>
+        <th>Owner</th>
+        <th>Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for n in notifications %}
+      <tr>
+        <td>{{ n.created_at }}</td>
+        <td>{{ n.status }}</td>
+        <td>{{ n.task|default:"-" }}</td>
+        <td>{{ n.owner_name|default:"-" }}</td>
+        <td>{{ n.reason|default:"-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="alert alert-info">No notifications found.</div>
+{% endif %}
+<a href="{% url 'sharepoint_reminder_dashboard' %}" class="btn btn-secondary mt-3">回主頁</a>
+{% endblock %}

@@ -17,7 +17,7 @@ class GraphSharePointClient(TeamsClient):
         self.path = quote(path)
         self.site_name = site_name
         self.drive_name = drive_name
-        self.site_id = self._get_site_id()
+        self.site_id = self._get_site_id(site_name=site_name)
         self.list_id = self._get_list_id()
         self.drive_id = self._get_drive_id()
         self.notify_interval = None
@@ -28,13 +28,13 @@ class GraphSharePointClient(TeamsClient):
         }
         self.col_letter = {k:v for k, v in zip(self.col_tag.keys(), map(get_excel_col, self.col_tag.values()))}
 
-    def _get_site_id(self):
-        url = f"/sites/{self.domain}:/sites/{self.site_name}"
-        self.site_id = self._send_request(url).json().get("id")
-        return self.site_id
+    # def _get_site_id(self):
+    #     url = f"/sites/{self.domain}:/sites/{self.site_name}"
+    #     self.site_id = self._send_request(url).json().get("id")
+    #     return self.site_id
 
     def _get_drive_id(self):
-        url = f"/sites/{self._get_site_id()}/drives"
+        url = f"/sites/{self._get_site_id(self.site_name)}/drives"
         for drive in self._send_request(url).json()["value"]:
             if drive["name"] == self.drive_name:
                 self._drive_id = drive["id"]
@@ -42,7 +42,7 @@ class GraphSharePointClient(TeamsClient):
         raise Exception(f"Drive {self.drive_name} not found")
     
     def _get_list_id(self, drive_name="ScrumSprints"):
-        url = f"/sites/{self._get_site_id()}/lists"
+        url = f"/sites/{self._get_site_id(self.site_name)}/lists"
         for lst in self._send_request(url).json()["value"]:
             if lst["displayName"] == drive_name:
                 self._list_id = lst.get("id")
@@ -263,7 +263,7 @@ class GraphSharePointClient(TeamsClient):
     def create_notify_items(self, notify_interval, sheet_name="automation_test"):
         self.notify_interval = notify_interval
         # 更新最新資料 
-        self.scrum()
+        self.scanAnyMatchMsg()
         # sheet_name=None代表下載所有工作表，前端需要增加一個可以選擇sheet name
         sheets = self._download_excel_as_df(sheet_name=sheet_name)
         # 處理excel檔案中所有的row，並存到task notification
@@ -275,7 +275,7 @@ class GraphSharePointClient(TeamsClient):
             for name, df in sheets.items():
                 self._process_sheet(df, name)
         # 創建任務，signal給celery，只允許一份excel檔一個通知人，避免反覆提醒
-        TaskManager.objects.update_or_create(
+        task,created = TaskManager.objects.update_or_create(
             site_name=self.site_name,
             drive_name=self.drive_name,
             file_path=self.path,
@@ -284,6 +284,7 @@ class GraphSharePointClient(TeamsClient):
                 "notify_interval": self.notify_interval
             }
         )
+        return task
 
     def notify(self, task:TaskNotification):
         # 發送 Teams 通知
@@ -295,7 +296,7 @@ class GraphSharePointClient(TeamsClient):
         task.status = TaskNotification.Status.SENT
         task.save()
     # scan notify items and if matched then update the cell and task status in db
-    def scrum(self):
+    def scanAnyMatchMsg(self):
         # 1. Load all notification records
         notifications = TaskNotification.objects.filter(
             host_id=self.me['id']

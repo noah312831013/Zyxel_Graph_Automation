@@ -57,7 +57,7 @@ pip install -r automation/requirements.txt
 
 ### 3. Configure OAuth
 
-Edit [`automation/core/oauth_settings.yml`](automation/core/oauth_settings.yml) with your Azure AD app credentials.
+Edit [`automation/oauth_settings.yml`](automation/oauth_settings_template.yml).
 
 ### 4. Run Migrations
 
@@ -107,6 +107,9 @@ docker-compose up --build
 - Celery is used for background tasks (reminders, chat analysis).
 - See `automation/reminders/sharepoint_client.py` for SharePoint/Teams integration logic.
 
+---
+## Flow Chart
+![Flow Chart](img.png)
 ---
 
 ## License

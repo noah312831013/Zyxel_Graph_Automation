@@ -5,7 +5,7 @@ import yaml
 import msal
 
 class AuthHelper:
-    def __init__(self, settings_path='./core/oauth_settings.yml'):
+    def __init__(self, settings_path='/app/oauth_settings.yml'):
         # Load settings from the YAML file
         with open(settings_path, 'r', encoding='utf8') as stream:
             self.settings = yaml.load(stream, yaml.SafeLoader)

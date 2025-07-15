@@ -6,7 +6,7 @@ import yaml
 import re
 
 class UnansweredTopicTrackerUtils:
-    def __init__(self, config_path="/app/core/oauth_settings.yml"):
+    def __init__(self, config_path="/app/oauth_settings.yml"):
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         self.GEMINI_API_KEY = config['GEMINI_API_KEY']

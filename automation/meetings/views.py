@@ -183,6 +183,10 @@ def meeting_response(request):
     # 更新回應
     meeting.update_attendee_response(matched_email, status=response_status)
     meeting.save()
+    lock = f"lock_meeting_{meeting_uuid}"
+    if cache.get(lock):
+        return HttpResponseBadRequest("Meeting is being processed, please wait.")
+    cache.set(lock, True, timeout=5)  # 設置鎖，
     process_meeting_status.delay(str(meeting.uuid))  # 觸發 Celery task
     return render(request, 'auto_close.html', {
         'email': matched_email,

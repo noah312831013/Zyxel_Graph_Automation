@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     restart: unless-stopped
     volumes:
-      - postgres_data:/var/lib/postgresql/data # 持久化資料
+      - postgres_data:/var/lib/postgresql/data
   celery:
     build:
       context: .

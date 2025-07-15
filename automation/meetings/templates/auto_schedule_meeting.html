@@ -215,13 +215,26 @@
           ${data.meetings.map(m => `
             <tr>
               <td>${m.title}</td>
-              <td>${m.status}</td>
+              <td>
+                <span class="
+                  border 
+                  rounded 
+                  px-2 
+                  py-1
+                  ${m.status && m.status.toLowerCase() === 'done' ? 'border-success text-success' : ''}
+                  ${m.status && m.status.toLowerCase() === 'failed' ? 'border-danger text-danger' : ''}
+                  ${m.status && m.status.toLowerCase() === 'waiting' ? 'border-warning text-warning' : ''}
+                  ${m.status && m.status.toLowerCase() === 'pending' ? 'border-secondary text-secondary' : ''}
+                ">
+                  ${m.status}
+                </span>
+              </td>
               <td>${m.host_email}</td>
               <td>${m.created_at || ""}</td>
               <td>
                 <a class="btn btn-primary btn-sm" href="/meetings/meeting-progress/${m.uuid}/">View Progress</a>
                 <button class="btn btn-danger btn-sm" onclick="deleteMeeting('${m.uuid}', this)">Delete</button>
-                </td>
+              </td>
             </tr>
           `).join("")}
         </tbody>

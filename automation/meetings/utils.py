@@ -36,8 +36,8 @@ def get_attendee_data(graph_client: TeamsClient, attendees):
         raise ValueError(f"Error fetching attendee data: {str(e)}")
 
 def create_card_payload(subject, start_time, end_time, user_id, uuid, base_response_url='http:/localhost/webhook/response/',desc=None):
-    start_time = start_time+timedelta(hours=8)
-    end_time = end_time+timedelta(hours=8)
+    start_time = start_time
+    end_time = end_time
     card = {
         "type": "AdaptiveCard",
         "version": "1.4",
@@ -95,8 +95,8 @@ def inform_attendees(teams_client: TeamsClient, meeting: 'AutoScheduleMeeting'):
         if chat_id:
             card_payload = create_card_payload(
                 subject=meeting.title,
-                start_time=parser.isoparse(meeting.get_candidate_time()['start']).astimezone(), # type: ignore
-                end_time=parser.isoparse(meeting.get_candidate_time()['end']).astimezone(), # type: ignore
+                start_time=parser.isoparse(meeting.get_candidate_time()['start']),
+                end_time=parser.isoparse(meeting.get_candidate_time()['end']),
                 user_id=user_id,
                 uuid = meeting.uuid,
                 base_response_url=f"{redirect.replace("/callback","")}/meetings/webhook/response/",

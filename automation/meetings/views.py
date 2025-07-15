@@ -24,7 +24,7 @@ from datetime import timedelta
 class TimeSlotPickForm(forms.Form):
     time_slots = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
-        label="請選擇會議時間",
+        label="Select Time Slots",
         required=True
     )
 
@@ -46,6 +46,7 @@ def schedule_meeting(request):
             messages.error(request, "Session expired, please re-submit meeting info.")
             return render(request, 'auto_schedule_meeting.html', context)
         selected_slots = [time_slots[int(idx)] for idx in selected_indexes]
+        print("3.selected_slots:", selected_slots)
         meeting = AutoScheduleMeeting(**meeting_data)
         print(selected_slots)
         meeting.set_candidate_times(selected_slots)
@@ -103,6 +104,7 @@ def schedule_meeting(request):
             'attendee_responses': meeting.attendee_responses,
             'current_try': meeting.current_try
         }
+        print("1.time_slots:", time_slots)
         request.session['time_slots'] = time_slots
         # 轉換 slot 時間為使用者時區，並格式化顯示
         from datetime import timezone
@@ -121,6 +123,7 @@ def schedule_meeting(request):
             return f"{start_local} ~ {end_local}"
         
         slot_choices = [(str(i), format_slot_time(slot, tz_info)) for i, slot in enumerate(time_slots)]
+        print("2.time_slots:", slot_choices)
         form = TimeSlotPickForm()
         form.fields['time_slots'].choices = slot_choices
         context['form'] = form
@@ -288,6 +291,7 @@ def get_contacts(request):
         return JsonResponse([], safe=False)
     results = trie.search_prefix(query)
     return JsonResponse(results, safe=False)
+from django.utils.timezone import localtime
 @require_GET
 def list_meetings(request):
     context = initialize_context(request)
@@ -307,8 +311,8 @@ def list_meetings(request):
         data.append({
             "uuid": str(m.uuid),
             "title": m.title,
-            "status": m.status,
-            "created_at": m.created_at.isoformat() if hasattr(m, "created_at") else "",
+            "status": m.status[0].upper()+m.status[1:],
+            "created_at": localtime(m.created_at).strftime("%Y-%m-%d %H:%M") if hasattr(m, "created_at") else "",
             "host_email": m.host_email,
         })
     return JsonResponse({"meetings": data})
@@ -358,9 +362,26 @@ def meeting_progress_view(request, meeting_uuid):
         'failed': 'danger'
     }
     candidate_time = meeting.get_candidate_time(tz=get_iana_from_windows(user['timeZone']))
+    # 解析 ISO 格式為 dict，方便 template 使用
+    if candidate_time and isinstance(candidate_time, dict):
+        # 若已經是 dict 格式，直接用
+        parsed_candidate_time = candidate_time
+    elif candidate_time:
+        # 若是 iso 格式字串，解析
+        try:
+            start, end = candidate_time.split('/')
+            parsed_candidate_time = {
+                'start': parser.isoparse(start).strftime('%Y-%m-%d %H:%M'),
+                'end': parser.isoparse(end).strftime('%Y-%m-%d %H:%M')
+            }
+        except Exception:
+            parsed_candidate_time = None
+    else:
+        parsed_candidate_time = None
+
     context = {
         'meeting': meeting,
-        'candidate_time':candidate_time,
+        'candidate_time': parsed_candidate_time,
         'status': meeting.status,
         'status_message': status_messages.get(meeting.status, 'unkown status'),
         'status_class': status_classes.get(meeting.status, 'secondary'),
@@ -385,5 +406,5 @@ def delete_meeting(request, meeting_uuid):
         return JsonResponse({"success": True})
     except AutoScheduleMeeting.DoesNotExist:
         return JsonResponse({"error": "Meeting not found"}, status=404)
-    
+
 

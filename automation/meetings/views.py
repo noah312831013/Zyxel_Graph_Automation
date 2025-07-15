@@ -58,6 +58,27 @@ def schedule_meeting(request):
         # 清理 session
         del request.session['meeting_data']
         del request.session['time_slots']
+        
+
+        candidate_time = meeting.get_candidate_time(tz=get_iana_from_windows(user['timeZone']))
+        # 解析 ISO 格式為 dict，方便 template 使用
+        if candidate_time and isinstance(candidate_time, dict):
+            # 若已經是 dict 格式，直接用
+            parsed_candidate_time = candidate_time
+        elif candidate_time:
+            # 若是 iso 格式字串，解析
+            try:
+                start, end = candidate_time.split('/')
+                parsed_candidate_time = {
+                    'start': parser.isoparse(start).strftime('%Y-%m-%d %H:%M'),
+                    'end': parser.isoparse(end).strftime('%Y-%m-%d %H:%M')
+                }
+            except Exception:
+                parsed_candidate_time = None
+        else:
+            parsed_candidate_time = None
+
+        context['candidate_time'] = parsed_candidate_time
         return render(request, 'auto_schedule_meeting_progress.html', context)
 
     if request.method == 'POST':

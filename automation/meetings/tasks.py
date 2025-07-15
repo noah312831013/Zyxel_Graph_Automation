@@ -4,7 +4,7 @@ from .models import AutoScheduleMeeting
 from core.teams_client import TeamsClient
 from .utils import inform_attendees
 from core.models import UserToken
-from datetime import timezone
+
 @shared_task
 def process_meeting_status(meeting_uuid):
     try:
@@ -22,7 +22,7 @@ def process_meeting_status(meeting_uuid):
                 meeting.save()
             elif response_summary['pending'] == 0 and response_summary['declined'] == 0:
                 meeting.status = 'done'
-                meeting.selected_time = meeting.get_candidate_time(tz=timezone.utc)
+                meeting.selected_time = meeting.get_candidate_time("UTC")
                 meeting.save()
                 attendees_emails = list(meeting.get_attendee_responses().keys())
                 attendees_emails.append(meeting.host_email)

@@ -259,7 +259,7 @@ class GraphClient:
 
         if body:
             new_event['body'] = {
-                'contentType': 'text',
+                'contentType': 'HTML',
                 'content': body
             }
 

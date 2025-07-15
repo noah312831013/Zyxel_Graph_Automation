@@ -73,7 +73,7 @@ def schedule_daemon_task():
 
     if not created:
         periodic_task.crontab = schedule
-        periodic_task.task = 'reminders.views.daemon_task'
+        periodic_task.task = 'reminders.tasks.daemon_task'
         periodic_task.enabled = True
         periodic_task.save()
 

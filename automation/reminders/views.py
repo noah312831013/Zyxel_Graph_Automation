@@ -98,8 +98,7 @@ class SharePointReminderDashboardView(View):
         if not user['is_authenticated']:
             return HttpResponseRedirect(reverse('signin'))
         gp=TeamsClient(user['id'])
-        site_name = "NebulaP8group"
-        drive_names = gp.list_drive(site_name)
+        drive_names = gp.list_drive()
         form = driveForm(drive_names=drive_names)
         context['form'] = form
         return render(request, self.template_name, context)
@@ -108,15 +107,21 @@ class SharePointReminderDashboardView(View):
         user = context['user']
         if not user['is_authenticated']:
             return HttpResponseRedirect(reverse('signin'))
-        form = driveForm(request.POST, drive_names=GraphSharePointClient(user_id=user['id']).list_drive("NebulaP8group"))
+        form = driveForm(request.POST, drive_names=GraphSharePointClient(user_id=user['id']).list_drive())
         if form.is_valid():
             drive_name = form.cleaned_data['drive_name']
             file_path = form.cleaned_data['file_path']
-            sheet_name = form.cleaned_data['sheet_name']
+            sheet_name = form.cleaned_data['sheet_name'] if form.cleaned_data['sheet_name'] else None
             frequency = form.cleaned_data['frequency']
-            gp = GraphSharePointClient(user_id=user['id'],drive_name=drive_name,path=file_path)
-            task=gp.create_notify_items(notify_interval=frequency, sheet_name=sheet_name)
-            schedule_notify(task)
+            try:
+                gp = GraphSharePointClient(user_id=user['id'],drive_name=drive_name,path=file_path)
+                task=gp.create_notify_items(notify_interval=frequency, sheet_name=sheet_name) # type: ignore
+                schedule_notify(task)
+            except Exception as e:
+                context['error_message'] = f"建立通知任務時出錯：{str(e)}"
+                form.add_error(None, f"建立通知任務時出錯：{str(e)}")
+                context['form'] = form
+                return render(request, self.template_name, context)
             return HttpResponseRedirect(reverse('sharepoint_reminder_dashboard'))
         context['form'] = form
         return render(request, self.template_name, context)

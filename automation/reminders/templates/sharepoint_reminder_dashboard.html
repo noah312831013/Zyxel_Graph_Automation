@@ -23,6 +23,11 @@
     {{ form.frequency }}
   </div>
   <button type="submit" id="start-tasks" class="btn btn-primary">Start</button></form>
+  {% if error_message %}
+  <div class="alert alert-danger" role="alert">
+    {{ error_message }}
+  </div>
+  {% endif %}
 <hr>
 <h3>Current Tasks</h2>
 <div id="tracking-table-container"></div>

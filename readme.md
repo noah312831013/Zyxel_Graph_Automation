@@ -1,22 +1,37 @@
-# Microsoft Automation Tool
+# Microsoft Automation Platform
 
-A Django-based automation platform for Microsoft Teams and SharePoint, featuring scheduled reminders, chat analysis, and seamless integration with Microsoft Graph API.
+A Django-based automation tool for Microsoft Teams and SharePoint, offering seamless integration with the Microsoft Graph API. Key features include automated meeting scheduling, SharePoint-driven reminders, and intelligent Teams chat analysis.
 
 ---
 
 ## Features
 
-- **SharePoint Reminder**:  
-  Automatically tracks project progress by monitoring SharePoint files. Sends reminders to stakeholders via Teams and updates SharePoint based on replies.
+- **Automated Meeting Scheduling**  
+  Effortlessly schedule and monitor meetings with real-time progress tracking.
 
-- **Auto Schedule Meeting**:  
-  Schedule meetings automatically and track their progress.
+- **SharePoint Reminders**  
+  Tracks project updates by monitoring SharePoint files, sends automated reminders to stakeholders via Teams, and updates SharePoint based on responses.
 
-- **Unanswered Topic Tracker**:  
-  Analyze Teams chat logs to find unanswered questions using LLMs (e.g., Gemini).
 
-- **Celery Integration**:  
-  Background tasks for reminders and chat analysis.
+  **The reminder system relies on a predefined column structure in the task sheet, as shown below:**
+  ```
+  # Column index mapping for the SharePoint task template
+    "status": 3,               # Current task status
+    "task": 4,                 # Task description
+    "owner": 5,                # Responsible person
+    "estimate_start_date": 6,  # Planned start date
+    "estimate_days": 7,        # Estimated duration (in days)
+    "spent_days": 8,           # Actual time spent
+    "due_date": 9,             # Task deadline
+    "note": 10,                # Additional comments
+    "MR_link": 11,             # Merge request link or PR
+    "teams_group_name": 12     # Corresponding Microsoft Teams group
+    ```
+  Each row in the sheet is parsed using this mapping to generate and send appropriate reminders.
+  **Add or modify your own machanism by edit the code in `automation/reminders/sharepoint_client.py`**
+
+- **Unanswered Topic Analysis**  
+  Leverages large language models (e.g., Gemini) to analyze Teams chat logs and identify unanswered questions.
 
 ---
 
@@ -24,101 +39,77 @@ A Django-based automation platform for Microsoft Teams and SharePoint, featuring
 
 ```
 automation/
-├── core/                # Authentication, Graph API, and core logic
-├── meetings/            # Meeting scheduling features
-├── reminders/           # SharePoint reminder and notification logic
-├── Unanswered_Topic_Tracker/ # Chat analysis utilities
-├── static/              # CSS and static files
-├── templates/           # Django templates
-├── requirements.txt     # Python dependencies
-├── docker-compose.yml   # Docker orchestration
-├── dockerfile           # Docker build file
-└── manage.py
+├── core/                    # Handles authentication, Microsoft Graph API, and core logic
+├── meetings/                # Meeting scheduling and management functionality
+├── reminders/               # SharePoint reminder and notification system
+├── unanswered_topic_tracker/ # Utilities for analyzing Teams chat logs
+├── static/                  # Static assets (CSS, JavaScript, etc.)
+├── templates/               # Django HTML templates
+├── requirements.txt         # Python dependencies
+├── docker-compose.yml       # Docker orchestration configuration
+├── dockerfile               # Docker build configuration
+└── manage.py                # Django management script
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Clone the repository
+### 1. Clone the Repository
+1. Install Docker.
+2. Clone the repository:
+   ```sh
+   git clone https://github.com/noah312831013/Zyxel_Graph_Automation.git
+   cd Zyxel_Graph_Automation
+   ```
+   or download the project as .zip and unzip the file.
 
-```sh
-git clone <your-repo-url>
-cd microsoft_automation_tool
-```
+### 2. Configuration
+1. Register your application in Azure.
+![Azure app register](Azure.png)
+![Azure app detail](app_detail.png)
+2. Create `automation/oauth_settings.yml` by copying and editing `automation/oauth_settings_template.yml`.
 
-### 2. Set up Python environment
-
-```sh
-python3 -m venv venv
-source venv/bin/activate
-pip install -r automation/requirements.txt
-```
-
-### 3. Configure OAuth
-
-Edit [`automation/oauth_settings.yml`](automation/oauth_settings_template.yml).
-
-### 4. Run Migrations
-
-```sh
-python automation/manage.py migrate
-```
-
-### 5. Start the Development Server
-
-```sh
-python automation/manage.py runserver
-```
-
-Visit [http://localhost:8000](http://localhost:8000) in your browser.
-
----
-
-## Docker Usage
-
+### 3. Docker Setup
 Build and run all services (Django, Celery, Redis, Postgres):
-
 ```sh
 cd automation
-docker-compose up --build
+docker compose up
 ```
 
----
+### 4. Local Development
+Access the application at:
+```
+http://localhost:8000
+```
 
-## Environment Variables
+For remote access or deployment, update `settings.py`:
+```python
+ALLOWED_HOSTS = ['your.domain.com']
+```
 
-- Configure secrets and environment variables in `.env` or via Docker Compose as needed.
+For HTTPS or specific CSRF origins, configure:
+```python
+CSRF_TRUSTED_ORIGINS = ['https://your.domain.com']
+```
 
----
+**Replace `your.domain.com` with your domain or IP address. Ensure the redirect URL is updated in both Azure and `oauth_settings.yml`.**
 
-## Main Apps
-
-- **core**: Auth, user session, Graph API helpers
-- **reminders**: SharePoint file monitoring, Teams notifications
-- **meetings**: Meeting scheduling and progress tracking
-- **Unanswered_Topic_Tracker**: LLM-based chat analysis
-
----
-
-## Development Notes
-
-- Ignore sensitive files and local artifacts via `.gitignore`.
-- Celery is used for background tasks (reminders, chat analysis).
-- See `automation/reminders/sharepoint_client.py` for SharePoint/Teams integration logic.
+## Optional
+Install ngrok
 
 ---
+
 ## Flow Chart
 ![Flow Chart](img.png)
+
 ---
 
 ## License
-
-MIT License. See [LICENSE](LICENSE) for details.
+Licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
 ## Credits
-
-Based on Microsoft Graph API and Django.  
-Some code and templates ©
+Built using Microsoft Graph API and Django.  
+Portions of code and templates © Noah312831013.

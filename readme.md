@@ -68,7 +68,8 @@ automation/
 1. Register your application in Azure.
 ![Azure app register](Azure.png)
 ![Azure app detail](app_detail.png)
-2. Create `automation/oauth_settings.yml` by copying and editing `automation/oauth_settings_template.yml`.
+2. Create the app secret and save it for later use (important, it only appear once)
+3. Create `automation/oauth_settings.yml` by copying and editing `automation/oauth_settings_template.yml`.
 
 ### 3. Docker Setup
 Build and run all services (Django, Celery, Redis, Postgres):

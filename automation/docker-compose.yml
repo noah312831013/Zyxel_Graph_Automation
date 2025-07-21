@@ -35,7 +35,7 @@ services:
       context: .
       dockerfile: ./dockerfile
     container_name: web
-    command: /bin/sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: ["sh","-c","python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
     volumes:
       - .:/app
       - ${HOME}/.config/gcloud:/root/.config/gcloud

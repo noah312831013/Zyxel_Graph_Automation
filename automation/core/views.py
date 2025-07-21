@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect,HttpResponse
 from django.urls import reverse
 from django.utils import timezone
 from core.models import UserToken
@@ -42,7 +42,13 @@ def sign_in(request):
 
 def callback(request):
     result = auth_helper.get_token_from_code(request)
-
+    # 檢查 response 是否包含 access_token
+    if not result or 'access_token' not in result:
+        print("Token response error:", result)  # 建議 log 起來
+        return HttpResponse(
+            f"Token acquisition failed: {result.get('error_description', result)}",
+            status=400
+        )
     token_data = {
         'access_token': result['access_token'],
         'refresh_token': result['refresh_token'],

@@ -40,3 +40,4 @@ wcwidth==0.2.13
 google-generativeai
 django_celery_beat
 tzlocal
+sentence-transformers

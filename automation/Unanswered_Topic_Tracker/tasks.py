@@ -4,8 +4,7 @@ from .models import CeleryBeatTask_UTT
 from .utils import UnansweredTopicTrackerUtils
 import logging
 import pandas as pd
-from datetime import datetime
-
+from sentence_transformers import SentenceTransformer, util
 logger = logging.getLogger(__name__)
 column_mapping = {
     "question": "問題內容",
@@ -38,7 +37,27 @@ def run_analysis_task(task_id):
         if not question_ls:
             logger.info(f"📭 沒有未回應問題，仍建立空 Excel task_id={task_id}")
             # TODO: 從 SharePoint 刪除舊報告（視需求）
-        
+        if task.result_question_ls!=None:
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            # encode all questions
+            existing_qs = task.result_question_ls
+            all_questions = existing_qs + question_ls
+            embeddings = model.encode([q["question"] for q in all_questions], convert_to_tensor=True)
+
+            # keep unique questions based on semantic similarity
+            unique_questions = []
+            added_indices = set()
+            for i in range(len(all_questions)):
+                if i in added_indices:
+                    continue
+                unique_questions.append(all_questions[i])
+                for j in range(i + 1, len(all_questions)):
+                    if j in added_indices:
+                        continue
+                    sim = util.pytorch_cos_sim(embeddings[i], embeddings[j]).item()
+                    if sim > 0.9:
+                        added_indices.add(j)
+            question_ls = unique_questions
         task.result_question_ls = question_ls  # type: ignore
 
         # 建立 DataFrame 並上傳 Excel

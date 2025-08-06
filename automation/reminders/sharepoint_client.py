@@ -279,6 +279,7 @@ class GraphSharePointClient(TeamsClient):
             site_name=self.site_name,
             drive_name=self.drive_name,
             file_path=self.path,
+            sheet_name=sheet_name,
             defaults={
                 "host_id": self.me['id'],
                 "notify_interval": self.notify_interval

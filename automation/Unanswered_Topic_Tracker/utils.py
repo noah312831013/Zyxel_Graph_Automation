@@ -127,7 +127,8 @@ class UnansweredTopicTrackerUtils:
     def analyze_unanswered_questions(self, raw_chat):
         processed_msgs = self.parse_graph_chat_messages(raw_chat)
         prompt = self.make_prompt_for_unanswered_questions(processed_msgs)
-        first_response = self.model.generate_content(
+        try:
+            first_response = self.model.generate_content(
             prompt,
             generation_config={
                 "temperature": 0,
@@ -136,7 +137,13 @@ class UnansweredTopicTrackerUtils:
                 "max_output_tokens": 1024,
                 "stop_sequences": []
             } # type: ignore
-        ).text
+            ).text
+        except Exception as e:
+            if "quota" in str(e).lower() or "limit" in str(e).lower():
+                print("API hit limit or quota exceeded.")
+            else:
+                print(f"Error during API call: {e}")
+            first_response = "None"
         print("🔍 初步回應：\n", first_response)
         # refine_prompt = f"""你剛才的回應是：
         # {first_response}

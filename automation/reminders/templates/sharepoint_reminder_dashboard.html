@@ -56,6 +56,7 @@
             <tr>
               <th>Drive Name</th>
               <th>File Path</th>
+              <th>Sheet Name</th>
               <th>Notify Interval (min)</th>
               <th>Last Notified At</th>
               <th>Next Notify Time</th>
@@ -68,14 +69,15 @@
               <tr>
                 <td>${item.drive_name}</td>
                 <td>${item.file_path}</td>
+                <td>${item.sheet_name}</td>
                 <td>${item.notify_interval}</td>
                 <td>${item.last_notified_at || '-'}</td>
                 <td>${item.next_notify_time || '-'}</td>
                 <td>
-                  <a class="btn btn-info btn-sm" href="${item.notification_url}" target="_blank">Detail</a>
+                  <a class="btn btn-info btn-sm" href="${item.notification_url}">Detail</a>
                 </td>
                 <td>
-                  <button class="btn btn-danger btn-sm" onclick="deleteTask('${item.drive_name}','${item.file_path}')">Delete</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteTask('${item.drive_name}','${item.file_path}','${item.sheet_name}')">Delete</button>
                 </td>
               </tr>
             `).join("")}
@@ -85,7 +87,7 @@
       container.html(table);
     });
   }
-  function deleteTask(drive_name, file_path, host_id) {
+  function deleteTask(drive_name, file_path,sheet_name, host_id) {
   if (!confirm("Are you sure you want to delete this task?")) return;
   $.ajax({
     url: "{% url 'delete_task' %}",
@@ -93,6 +95,7 @@
     data: {
       drive_name,
       file_path,
+      sheet_name,
       csrfmiddlewaretoken: '{{ csrf_token }}'
     },
     success: function() {

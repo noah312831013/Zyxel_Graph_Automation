@@ -1,5 +1,7 @@
 from django.db import models
 import uuid
+from django_celery_beat.models import PeriodicTask
+
 # Create your models here.
 # 舊的
 class TaskNotification(models.Model):
@@ -41,7 +43,14 @@ class TaskManager(models.Model):
     site_name = models.CharField(max_length=255)
     drive_name = models.CharField(max_length=255)
     file_path = models.CharField(max_length=255)
+    sheet_name = models.CharField(max_length=255, null=True, blank=True, default=None)
     notify_interval = models.IntegerField(default=60)  # in min
     last_notified_at = models.DateTimeField(null=True, blank=True,default=None)
     next_notify_time = models.DateTimeField(null=True, blank=True,default=None)
     host_id = models.CharField(max_length=255)
+    periodic_task = models.ForeignKey(
+        PeriodicTask,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )

@@ -3,6 +3,8 @@ from celery import shared_task
 from reminders.models import TaskManager, TaskNotification
 from reminders.sharepoint_client import GraphSharePointClient
 import time
+from datetime import timedelta
+from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 # @shared_task
@@ -51,9 +53,9 @@ def notify_task(uuid):
 
         for i, notification in enumerate(notifications):
             notify_single_task.delay(notification.uuid) # type: ignore
-            if (i + 1) % MAX_NOTIFICATIONS_PER_BATCH == 0:
-                time.sleep(SLEEP_BETWEEN_BATCHES)
-
+        task.last_notified_at = timezone.now()
+        task.next_notify_time = task.last_notified_at + timedelta(minutes=task.notify_interval)
+        task.save()
         logger.info(f"notification pushed {task.file_path}")
     except Exception as e:
         logger.error(f"notify_task failed for uuid {uuid}: {e}")

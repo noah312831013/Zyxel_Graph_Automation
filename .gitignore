@@ -1,5 +1,5 @@
 venv
-automation/test.ipynb
+*test.ipynb
 automation/oauth_settings.yml
 __pycache__/
 *.pyc

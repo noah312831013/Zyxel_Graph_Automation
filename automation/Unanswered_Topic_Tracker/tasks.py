@@ -30,7 +30,7 @@ def run_analysis_task(task_id):
         # 抓取 Teams 對話
         TC = TeamsClient(task.host_id)
         chat_data = TC.list_msg_in_chats(task.chat_id)
-
+        
         # 分析未回覆問題
         UTTU = UnansweredTopicTrackerUtils()
         question_ls = UTTU.analyze_unanswered_questions(chat_data)

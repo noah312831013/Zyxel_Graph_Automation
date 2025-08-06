@@ -45,7 +45,6 @@ def schedule_notify(task: TaskManager):
             args=json.dumps([str(task.pk)]),
         )
         task.periodic_task = periodic_task # type: ignore
-
     task.save()
     notify_task.delay(str(task.pk))  # type: ignore # 立即非同步執行一次
 
@@ -133,12 +132,12 @@ def get_tracking_items(request):
     Returns the list of task managers for real-time updates.
     """
     items = TaskManager.objects.filter(host_id=request.session['user']['id']).values(
-         "drive_name", "file_path", "notify_interval", "last_notified_at", "next_notify_time"
+         "drive_name", "file_path","sheet_name", "notify_interval", "last_notified_at", "next_notify_time"
     )
     # 對 file_path 解碼，並加上通知查詢 url
     result = []
     for item in items:
-        item["notification_url"] = f"/reminders/task_notifications/?file_path={item['file_path']}"
+        item["notification_url"] = f"/reminders/task_notifications/?file_path={item['file_path']}&sheet_name={item['sheet_name']}"
         item["file_path"] = unquote(item["file_path"])
         # 加入通知查詢的 url
         result.append(item)
@@ -156,11 +155,12 @@ def get_task_notifications(request):
     if not context['user']['is_authenticated']:
         return HttpResponseRedirect(reverse('signin'))
     file_path = request.GET.get("file_path")
-    print(f"file_path: {file_path}")
-    if not file_path:
+    sheet_name = request.GET.get("sheet_name")
+    if not file_path or not sheet_name:
         return JsonResponse({"error": "Missing file_path"}, status=400)
     notifications = TaskNotification.objects.filter(
-    host_id=request.session['user']['id'],file_path=quote(file_path))
+        host_id=request.session['user']['id'],file_path=quote(file_path),sheet_name=sheet_name
+        )
     context['notifications'] = notifications
     return render(request, "notification_records.html", context)
 from django.views.decorators.csrf import csrf_exempt
@@ -174,17 +174,20 @@ def delete_task(request):
         return HttpResponseRedirect(reverse('signin'))
     if request.method == "POST":
         drive_name = request.POST.get("drive_name")
+        sheet_name = request.POST.get("sheet_name")
         file_path = quote(request.POST.get("file_path"))
         # 先刪除 TaskNotification
         TaskNotification.objects.filter(
             drive_name=drive_name,
             file_path=file_path,
+            sheet_name=sheet_name,
             host_id=context['user']['id']
         ).delete()
         # 取得並刪除對應的 PeriodicTask
         tasks = TaskManager.objects.filter(
             drive_name=drive_name,
             file_path=file_path,
+            sheet_name=sheet_name,
             host_id=context['user']['id']
         )
         for task in tasks:
